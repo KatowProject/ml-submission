@@ -15,24 +15,15 @@ const multer = Multer({
     }
 });
 
+let model;
+(async () => model = await loadModel())();
+
+console.log(model);
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-app.use(async (req, res, next) => {
-    console.log('Middleware');
-    try {
-        if (!req.model) {
-            req.model = await loadModel();
-            console.log('Model loaded');
-        }
-        next();
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('An error occurred');
-    }
-});
 
 app.post('/predict', multer.single('image'), async (req, res) => {
 
