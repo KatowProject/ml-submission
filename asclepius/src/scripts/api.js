@@ -1,5 +1,5 @@
 // TODO: Silakan sesuaikan BASE URL dari endpoint Anda
-const BASE_URL = 'YOUR_BASE_URL';
+const BASE_URL = 'https://asclepius-api-977619239493.us-central1.run.app';
 
 const ENDPOINT = {
   predict: `${BASE_URL}/predict`,
