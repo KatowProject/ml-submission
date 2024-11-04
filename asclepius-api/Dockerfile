@@ -1,10 +1,10 @@
 FROM node:22.11.0
-WORKDIR /app
+WORKDIR /
 
-ENV PORT=3000
-ENV MODEL_URL=http://localhost:5000
+# copy env file
+COPY .env .env
 
 COPY . .
 RUN npm install
-EXPOSE 3000
+EXPOSE 8080
 CMD ["npm", "run", "start"]
