@@ -14,7 +14,16 @@ async function getPredictions() {
     const snapshot = await predictionsCollection.get();
 
     for (const doc of snapshot.docs) {
-        predictions.push(doc.data());
+        const data = doc.data();
+        predictions.push({
+            id: doc.id,
+            history: {
+                result: data.result,
+                createdAt: data.createdAt,
+                suggestion: data.suggestion,
+                id: data.id,
+            },
+        });
     }
 
     return predictions;

@@ -3,25 +3,22 @@ require('dotenv').config();
 const express = require('express');
 const Multer = require('multer');
 const cors = require('cors');
-const crypto = require('crypto');
-
-const randomUUID = () => crypto.randomUUID();
 
 const { loadModel, predict } = require('./model');
 const { getPredictions } = require('./firestore');
 
 const multer = Multer({
-    storage: Multer.memoryStorage(), fileFilter: (req, file, cb) => {
-        const size = file.size ?? parseInt(req.headers['content-length']);
-        console.log(size);
-        if (size > 1000000) {
-            return cb(new Multer.MulterError('LIMIT_FILE_SIZE'));
-        } else if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+    storage: Multer.memoryStorage(),
+    limits: {
+        fileSize: 1000000,
+    },
+    fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/^image/)) {
             return cb(new Multer.MulterError('LIMIT_FILE_TYPE'));
         } else {
             cb(null, true);
         }
-    }
+    },
 });
 
 const start = async () => {
@@ -35,7 +32,12 @@ const start = async () => {
         try {
             const image = req.file;
             const prediction = await predict(model, image);
-            res.json(prediction);
+
+            res.status(201).json({
+                status: "success",
+                message: "Model is predicted successfully",
+                data: prediction
+            });
         } catch (error) {
             console.error(error);
             res.status(400).send({
@@ -48,20 +50,25 @@ const start = async () => {
     app.get('/predict/histories', async (req, res) => {
         const predictions = await getPredictions();
 
-        console.log(predictions);
         res.json({
-            status: "success"
+            status: "success",
+            data: predictions
         })
     });
 
     app.use((error, req, res, next) => {
-        console.error(error);
         if (error instanceof Multer.MulterError) {
             switch (error.code) {
                 case 'LIMIT_FILE_SIZE':
                     return res.status(413).send({
                         status: "fail",
                         message: "Payload content length greater than maximum allowed: 1000000"
+                    });
+
+                case 'LIMIT_FILE_TYPE':
+                    return res.status(415).send({
+                        status: "fail",
+                        message: "Invalid file type. Only images are allowed."
                     });
                 default:
                     return res.status(400).send({

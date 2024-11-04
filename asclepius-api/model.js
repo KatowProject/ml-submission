@@ -3,6 +3,11 @@ const tf = require('@tensorflow/tfjs-node');
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+
+const randomUUID = () => crypto.randomUUID();
+
+const { storePrediction } = require('./firestore');
 
 const MODEL_DIR = path.join(__dirname, 'model');
 const MODEL_PATH = path.join(MODEL_DIR, 'model.json');
@@ -58,29 +63,26 @@ async function predict(model, image) {
     const score = await predictions.data();
     const confidences = Math.max(...score) * 100;
 
-    console.log('Predictions:', score);
-    console.log('Max confidence:', Math.max(...score));
-    console.log('Confidence:', confidences);
-
     const probRes = score[0];
-    const classLabel = ['Cancer', 'Non-Cancer'];
+    const classLabel = ['Cancer', 'Non-cancer'];
     const label = classLabel[probRes > 0.5 ? 0 : 1];
 
-    const suggestion = label === 'Cancer' ? 'Segera periksa ke dokter!' : 'Penyakit kanker tidak terdeteksi';
+    const suggestion = label === 'Cancer' ? 'Segera periksa ke dokter!' : 'Penyakit kanker tidak terdeteksi.';
 
-    if (score > 1 && label == 'Non-Cancer') {
+    if (confidences > 1 && label == 'Non-cancer') {
         throw new Error('Terjadi kesalahan dalam melakukan prediksi');
     }
 
-    return {
-        status: 'success',
-        data: {
-            label,
-            confidence: confidences,
-            suggestion
-        }
-    };
+    const predictResult = {
+        id: randomUUID(),
+        result: label,
+        suggestion,
+        createdAt: new Date().toISOString()
+    }
 
+    await storePrediction(predictResult.id, predictResult);
+
+    return predictResult;
 }
 
 module.exports = {
